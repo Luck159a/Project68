@@ -1,8 +1,13 @@
-@extends('layouts.app') 
-@section('content')
+
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Dashboard') }}
+        </h2>
+    </x-slot>
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">📋 User Management</h1>
+        <h1 class="text-3xl font-bold text-gray-800"> User Management</h1>
         <a href="{{ route('users.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300 shadow-md">
             + Add New User
         </a>
@@ -21,7 +26,7 @@
                 class="flex-grow border border-gray-300 p-2 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm"
             >
             <button type="submit" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300">
-                Search 🔎
+                Search 
             </button>
             @if($search)
                 <a href="{{ route('users.index') }}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300">Clear</a>
@@ -62,7 +67,7 @@
                         </td>
                         <td class="px-5 py-3 border-b border-gray-200 text-sm">{{ $user->created_at->format('Y-m-d') }}</td>
                         <td class="px-5 py-3 border-b border-gray-200 text-sm space-x-2">
-                            <a href="{{ route('users.show', $user->id) }}" class="text-blue-600 hover:text-blue-900 font-medium">View</a>
+                            
                             <a href="{{ route('users.edit', $user->id) }}" class="text-yellow-600 hover:text-yellow-900 font-medium">Edit</a>
                             <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this user?');">
                                 @csrf
@@ -85,4 +90,4 @@
     </div>
 
 </div>
-@endsection
+</x-app-layout>

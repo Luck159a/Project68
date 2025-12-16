@@ -42,7 +42,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:6|confirmed',
             'role' => ['required', Rule::in(['admin', 'user', 'manager'])],
             'status' => ['required', Rule::in(['active', 'inactive', 'banned'])],
         ]);
@@ -84,7 +84,7 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'role' => ['required', Rule::in(['admin', 'user', 'manager'])],
             'status' => ['required', Rule::in(['active', 'inactive', 'banned'])],
-            'password' => 'nullable|string|min:8|confirmed', // อนุญาตให้ว่างถ้าไม่ต้องการเปลี่ยน
+            'password' => 'nullable|string|min:6|confirmed', // อนุญาตให้ว่างถ้าไม่ต้องการเปลี่ยน
         ]);
 
         $user->name = $request->name;
