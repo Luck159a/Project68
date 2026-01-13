@@ -5,19 +5,66 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
+                    <a href="{{ url('/') }}">
                         <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    <x-nav-link :href="url('/')" :active="request()->root() === url('/') && !request()->segment(1)">
+                        หน้าแรก
+                    </x-nav-link>
+                    @if (auth()->user()->role === 'admin'  )
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
                         จัดการข้อมูลผู้ใช้ 
                     </x-nav-link>
+                    @endif
+                    @if (strtolower(Auth::user()->role ?? '') === 'patient')
+                        <x-nav-link :href="route('queue.book')" :active="request()->routeIs('queue.book')">
+                            จองคิว
+                        </x-nav-link>
+                        <x-nav-link :href="route('queue.my')" :active="request()->routeIs('queue.my')">
+                            สถานะคิวของฉัน
+                        </x-nav-link>
+                        <x-nav-link :href="route('queue.current')" :active="request()->routeIs('queue.current')">
+                            ลำดับคิวปัจจุบัน
+                        </x-nav-link>
+                        <x-nav-link :href="route('queue.history')" :active="request()->routeIs('queue.history')">
+                            ประวัติการจอง
+                        </x-nav-link>
+                    @endif
+                    @if (strtolower(Auth::user()->role ?? '') === 'staff')
+                        <x-nav-link :href="route('staff.dashboard')" :active="request()->routeIs('staff.dashboard')">
+                            Dashboard สรุปคิว
+                        </x-nav-link>
+                        <x-nav-link :href="route('queue.manage')" :active="request()->routeIs('queue.manage')">
+                            จัดการคิว
+                        </x-nav-link>
+                        <x-nav-link :href="route('queue.call')" :active="request()->routeIs('queue.call')">
+                            เรียกและอัพเดทคิว
+                        </x-nav-link>
+                        <x-nav-link :href="route('report.daily')" :active="request()->routeIs('report.daily')">
+                            รายงานประจำวัน (PDF)
+                        </x-nav-link>
+                    @endif
+                    @if (strtolower(Auth::user()->role ?? '') === 'doctor')
+                        <x-nav-link :href="route('doctor.queue.list')" :active="request()->routeIs('doctor.queue.list')">
+                            รายการคิวผู้ป่วยและค้นหา
+                        </x-nav-link>
+                        <x-nav-link :href="route('doctor.patient.record')" :active="request()->routeIs('doctor.patient.record')">
+                            บันทึกข้อมูลผู้ป่วยเบื้องต้น
+                        </x-nav-link>
+                        <x-nav-link :href="route('doctor.patient.history')" :active="request()->routeIs('doctor.patient.history')">
+                            ประวัติผู้รับบริการ
+                        </x-nav-link>
+                        <x-nav-link :href="route('doctor.report.pdf')" :active="request()->routeIs('doctor.report.pdf')">
+                            รายงานผู้เข้ารับบริการ (PDF)
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -26,7 +73,14 @@
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
+                            <div class="flex items-center">
+                                {{ Auth::user()->name }}
+                                @if (strtolower(Auth::user()->role ?? '') === 'admin')
+                                    <span class="ml-2 px-2 py-1 text-xs font-bold text-white bg-red-600 rounded-full">
+                                        ADMIN
+                                    </span>
+                                @endif
+                            </div>
 
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -70,15 +124,28 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
+            <x-responsive-nav-link :href="url('/')" :active="request()->root() === url('/') && !request()->segment(1)">
+                หน้าแรก
+            </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
+                จัดการข้อมูลผู้ใช้
+            </x-responsive-nav-link>
         </div>
-
+        
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
-                <div class="font-medium text-base text-gray-800">{{ Auth::user()->name }}</div>
+                <div class="flex items-center font-medium text-base text-gray-800">
+                    {{ Auth::user()->name }}
+                    @if (strtolower(Auth::user()->role ?? '') === 'admin')
+                        <span class="ml-2 px-2 py-1 text-xs font-bold text-white bg-red-600 rounded-full">
+                            ADMIN
+                        </span>
+                    @endif
+                </div>
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()->email }}</div>
             </div>
 
