@@ -3,6 +3,11 @@
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\DoctorScheduleController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\QueueController;
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\DoctorController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -28,6 +33,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/doctor/patient/record', [DoctorController::class, 'recordPatient'])->name('doctor.patient.record'); // บันทึกข้อมูลเบื้องต้น
     Route::get('/doctor/patient/history', [DoctorController::class, 'patientHistory'])->name('doctor.patient.history'); // ดูประวัติผู้รับบริการ
     Route::get('/doctor/report', [ReportController::class, 'doctorReport'])->name('doctor.report.pdf'); // ออกรายงาน PDF
+    Route::get('/admin/doctor/schedule', [DoctorScheduleController::class, 'index'])
+        ->name('doctor.schedule');
+
+    Route::get('/admin/report/users/pdf', [ReportController::class, 'usersPdf'])
+        ->name('report.users.pdf');
+
+    Route::get('/admin/report/services/pdf', [ReportController::class, 'servicesPdf'])
+        ->name('report.service.pdf');
+
 });
 
 Route::get('/users', [UserController::class, 'index'])->name('users.index');

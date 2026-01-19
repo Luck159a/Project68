@@ -15,14 +15,51 @@
                     <x-nav-link :href="url('/')" :active="request()->root() === url('/') && !request()->segment(1)">
                         หน้าแรก
                     </x-nav-link>
-                    @if (auth()->user()->role === 'admin'  )
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
-                        จัดการข้อมูลผู้ใช้ 
-                    </x-nav-link>
-                    @endif
+                    @if (auth()->user()->role === 'admin')
+
+    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+        {{ __('Dashboard') }}
+    </x-nav-link>
+
+    <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
+        จัดการข้อมูลผู้ใช้
+    </x-nav-link>
+
+    <x-nav-link :href="route('doctor.schedule')" :active="request()->routeIs('doctor.schedule')">
+        จัดตารางการทำงานของหมอ
+    </x-nav-link>
+
+    <!-- รายงาน (Hover) -->
+    <div class="relative group">
+        <button
+            class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none">
+            รายงาน
+            <svg class="ml-1 h-4 w-4 fill-current" viewBox="0 0 20 20">
+                <path fill-rule="evenodd"
+                      d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                      clip-rule="evenodd" />
+            </svg>
+        </button>
+
+        <div
+            class="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-md shadow-lg
+                   opacity-0 invisible group-hover:opacity-100 group-hover:visible
+                   transition-all duration-150 z-50">
+
+            <a href="{{ route('report.users.pdf') }}"
+               class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                รายงานบัญชีผู้ใช้ (PDF)
+            </a>
+
+            <a href="{{ route('report.service.pdf') }}"
+               class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                รายงานผู้เข้ารับบริการ (PDF)
+            </a>
+        </div>
+    </div>
+
+@endif
+
                     @if (strtolower(Auth::user()->role ?? '') === 'patient')
                         <x-nav-link :href="route('queue.book')" :active="request()->routeIs('queue.book')">
                             จองคิว
