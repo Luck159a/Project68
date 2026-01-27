@@ -8,6 +8,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\DoctorController;
+use App\Http\Controllers\ScheduleController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -22,6 +23,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/queue/book', [QueueController::class, 'book'])->name('queue.book'); // หน้าจองคิว
+    Route::get('/queue/schedule', [ScheduleController::class, 'index'])->name('queue.schedule'); // ตารางการจองคิว
     Route::get('/queue/my', [QueueController::class, 'myQueue'])->name('queue.my'); // สถานะคิวของตนเอง
     Route::get('/queue/current', [QueueController::class, 'currentQueue'])->name('queue.current'); // ลำดับคิวปัจจุบัน
     Route::get('/queue/history', [QueueController::class, 'history'])->name('queue.history'); // ประวัติ + ดาวน์โหลด PDF
