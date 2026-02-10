@@ -27,24 +27,28 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // ✅ การจองคิว (แยก GET สำหรับดูหน้าฟอร์ม และ POST สำหรับกดบันทึก)
-    // หน้าเข้าจอง (ต้องมี ID เสมอ) -> พิมพ์ URL ทดสอบ: http://127.0.0.1:8000/queue/book/1
+    // ✅ การจองคิว
     Route::get('/queue/book/{scheduleId}', [QueueController::class, 'create'])->name('queues.create');
-    
-    // หน้ากดบันทึก (ห้ามพิมพ์ URL นี้ใน Browser ตรงๆ)
     Route::post('/queue/book', [QueueController::class, 'store'])->name('queues.store');
 
-    // จัดการคิวและรายงาน
+    // จัดการคิวและรายงานทั่วไป
     Route::get('/queue/my', [QueueController::class, 'myQueue'])->name('queue.my');
     Route::get('/queue/current', [QueueController::class, 'currentQueue'])->name('queue.current');
     Route::get('/queue/history', [QueueController::class, 'history'])->name('queue.history');
     Route::get('/queues', [QueueController::class, 'index'])->name('queues.index');
     Route::patch('/queues/{id}/status', [QueueController::class, 'updateStatus'])->name('queues.updateStatus');
+    
+    // ส่วนของเจ้าหน้าที่และหมอ
     Route::get('/staff/dashboard', [StaffController::class, 'dashboard'])->name('staff.dashboard');
     Route::get('/report/daily', [ReportController::class, 'daily'])->name('report.daily');
     Route::get('/doctor/queue', [DoctorController::class, 'queueList'])->name('doctor.queue.list');
     Route::get('/doctor/report', [ReportController::class, 'doctorReport'])->name('doctor.report.pdf');
     Route::get('/admin/doctor/schedule', [DoctorScheduleController::class, 'index'])->name('doctor.schedule');
+
+    // ✅ เพิ่มส่วนนี้: แก้ปัญหา Route [report.users.pdf] และ [report.service.pdf] not defined
+    // มั่นใจว่าใน ReportController มีฟังก์ชันชื่อ usersPdf และ servicesPdf นะครับ
+    Route::get('/admin/report/users/pdf', [ReportController::class, 'usersPdf'])->name('report.users.pdf');
+    Route::get('/admin/report/services/pdf', [ReportController::class, 'servicesPdf'])->name('report.service.pdf');
 });
 
 Route::resource('users', UserController::class);
