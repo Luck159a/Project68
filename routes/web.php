@@ -19,7 +19,7 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'admin.or.staff'])->group(function () {
     // ใช้ Resource Route ตัวเดียว ครอบคลุมทั้ง Index, Create, Store, Edit, Update, Destroy
     Route::resource('doctor-schedules', DoctorScheduleController::class);
 });
