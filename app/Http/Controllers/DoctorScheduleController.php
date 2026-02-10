@@ -26,7 +26,7 @@ class DoctorScheduleController extends Controller
     public function create()
     {
         $doctors = User::where('role', 'doctor')->get(); // สมมติว่ามีการแบ่ง role
-        return view('doctor_schedules.create', compact('doctors'));
+        return view('doctor_schedules.form', compact('doctors'));
     }
 
     public function store(Request $request)
@@ -43,4 +43,32 @@ class DoctorScheduleController extends Controller
     }
 
     // เพิ่ม Edit, Update, Destroy ตามความเหมาะสม...
+    public function edit(DoctorSchedule $doctorSchedule)
+    {
+        $doctors = User::where('role', 'doctor')->get();
+        // ส่งตัวแปรชื่อ $schedule เพื่อให้ตรงกับใน View
+        return view('doctor_schedules.form', [
+            'schedule' => $doctorSchedule,
+            'doctors' => $doctors
+        ]);
+    }
+
+    public function update(Request $request, DoctorSchedule $doctorSchedule)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required',
+            'schedule_date' => 'required|date',
+            'start_time' => 'required',
+            'end_time' => 'required',
+        ]);
+
+        $doctorSchedule->update($validated);
+        return redirect()->route('doctor-schedules.index')->with('success', 'อัพเดทสำเร็จ');
+    }
+
+    public function destroy(DoctorSchedule $doctorSchedule)
+    {
+        $doctorSchedule->delete();
+        return redirect()->route('doctor-schedules.index')->with('success', 'ลบสำเร็จ');
+    }
 }
