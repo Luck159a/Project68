@@ -24,10 +24,13 @@ class DoctorScheduleController extends Controller
     }
 
     public function create()
-    {
-        $doctors = User::where('role', 'doctor')->get(); // สมมติว่ามีการแบ่ง role
-        return view('doctor_schedules.form', compact('doctors'));
-    }
+{
+    // ดึงเฉพาะ User ที่มีบทบาทเป็น doctor
+    $doctors = \App\Models\User::where('role', 'doctor')->get();
+    
+    // ส่งตัวแปร $doctors ไปที่ View
+    return view('doctor_schedules.form', compact('doctors'));
+}
 
     public function store(Request $request)
     {
