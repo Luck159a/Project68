@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-// เพิ่มบรรทัดนี้ด้านบน
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany; // เพิ่มการใช้งาน HasMany
 
 class DoctorSchedule extends Model
 {
@@ -13,14 +13,23 @@ class DoctorSchedule extends Model
         'schedule_date',
         'start_time',
         'end_time',
+        'status', // เพิ่ม status เผื่อกรณีหมอไม่อยู่หรือยกเลิก
     ];
 
     /**
-     * เพิ่มฟังก์ชันนี้ลงไปครับ 
-     * เพื่อบอกว่าตาราง DoctorSchedule นี้เชื่อมกับ User
+     * เชื่อมกับ User (หมอ)
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * เชื่อมกับตาราง Queues (การจองคิว)
+     * หนึ่งตารางเวลาของหมอ สามารถมีการจองได้หลายคิว (HasMany)
+     */
+    public function queues(): HasMany
+    {
+        return $this->hasMany(Queue::class, 'docschId');
     }
 }

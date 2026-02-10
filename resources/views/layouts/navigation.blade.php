@@ -61,8 +61,8 @@
 @endif
 
                     @if (strtolower(Auth::user()->role ?? '') === 'patient')
-                        <x-nav-link :href="route('queue.book')" :active="request()->routeIs('queue.book')">
-                            จองคิว
+                        <x-nav-link :href="route('doctor-schedules.index')" :active="request()->routeIs('doctor-schedules.index')">
+                            {{ __('จองคิว') }}
                         </x-nav-link>
                         <x-nav-link :href="route('queue.my')" :active="request()->routeIs('queue.my')">
                             สถานะคิวของฉัน

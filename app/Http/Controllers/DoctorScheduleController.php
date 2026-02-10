@@ -23,12 +23,12 @@ class DoctorScheduleController extends Controller
         return view('doctor_schedules.index', compact('schedules'));
     }
 
-    public function create()
+   public function create()
 {
-    // ดึงเฉพาะ User ที่มีบทบาทเป็น doctor
+    // ดึงข้อมูล User ทั้งหมดที่มี role เป็น doctor
     $doctors = \App\Models\User::where('role', 'doctor')->get();
     
-    // ส่งตัวแปร $doctors ไปที่ View
+    // ต้องมี compact('doctors') เพื่อส่งค่าไปที่หน้า Blade
     return view('doctor_schedules.form', compact('doctors'));
 }
 

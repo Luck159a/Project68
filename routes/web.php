@@ -10,52 +10,43 @@ use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\DoctorScheduleController;
 
+// --- หน้าแรกและ Dashboard ---
+Route::get('/', function () { return view('welcome'); });
+Route::get('/dashboard', function () { return view('dashboard'); })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware(['auth', 'verified', 'admin.or.staff'])->group(function () {
-    // ใช้ Resource Route ตัวเดียว ครอบคลุมทั้ง Index, Create, Store, Edit, Update, Destroy
+// --- จัดการตารางเวลาหมอ ---
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('doctor-schedules', DoctorScheduleController::class);
 });
 
+// --- กลุ่ม Route สำหรับผู้ที่ล็อกอินแล้ว ---
 Route::middleware('auth')->group(function () {
+    
+    // โปรไฟล์
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/queue/book', [QueueController::class, 'book'])->name('queue.book'); // หน้าจองคิว
-    Route::get('/queue/schedule', [ScheduleController::class, 'index'])->name('queue.schedule'); // ตารางการจองคิว
-    Route::get('/queue/my', [QueueController::class, 'myQueue'])->name('queue.my'); // สถานะคิวของตนเอง
-    Route::get('/queue/current', [QueueController::class, 'currentQueue'])->name('queue.current'); // ลำดับคิวปัจจุบัน
-    Route::get('/queue/history', [QueueController::class, 'history'])->name('queue.history'); // ประวัติ + ดาวน์โหลด PDF
-    Route::get('/staff/dashboard', [StaffController::class, 'dashboard'])->name('staff.dashboard'); // สรุปคิวปัจจุบัน + สถิติ + ข้อมูลผู้รับบริการ
-    Route::get('/queue/manage', [QueueController::class, 'manage'])->name('queue.manage'); // จัดการคิว (เพิ่ม/แก้ไข/ลบ/ค้นหา)
-    Route::get('/queue/call', [QueueController::class, 'call'])->name('queue.call'); // เรียกคิว / ข้ามคิว / ปิดคิว / อัพเดทสถานะ
-    Route::get('/report/daily', [ReportController::class, 'daily'])->name('report.daily'); // ออกรายงาน PDF ประจำวัน
-    Route::get('/doctor/queue', [DoctorController::class, 'queueList'])->name('doctor.queue.list'); // ดูและค้นหารายการคิว
-    Route::get('/doctor/patient/record', [DoctorController::class, 'recordPatient'])->name('doctor.patient.record'); // บันทึกข้อมูลเบื้องต้น
-    Route::get('/doctor/patient/history', [DoctorController::class, 'patientHistory'])->name('doctor.patient.history'); // ดูประวัติผู้รับบริการ
-    Route::get('/doctor/report', [ReportController::class, 'doctorReport'])->name('doctor.report.pdf'); // ออกรายงาน PDF
-    Route::get('/admin/doctor/schedule', [DoctorScheduleController::class, 'index'])
-        ->name('doctor.schedule');
 
-    Route::get('/admin/report/users/pdf', [ReportController::class, 'usersPdf'])
-        ->name('report.users.pdf');
+    // ✅ การจองคิว (แยก GET สำหรับดูหน้าฟอร์ม และ POST สำหรับกดบันทึก)
+    // หน้าเข้าจอง (ต้องมี ID เสมอ) -> พิมพ์ URL ทดสอบ: http://127.0.0.1:8000/queue/book/1
+    Route::get('/queue/book/{scheduleId}', [QueueController::class, 'create'])->name('queues.create');
+    
+    // หน้ากดบันทึก (ห้ามพิมพ์ URL นี้ใน Browser ตรงๆ)
+    Route::post('/queue/book', [QueueController::class, 'store'])->name('queues.store');
 
-    Route::get('/admin/report/services/pdf', [ReportController::class, 'servicesPdf'])
-        ->name('report.service.pdf');
-
+    // จัดการคิวและรายงาน
+    Route::get('/queue/my', [QueueController::class, 'myQueue'])->name('queue.my');
+    Route::get('/queue/current', [QueueController::class, 'currentQueue'])->name('queue.current');
+    Route::get('/queue/history', [QueueController::class, 'history'])->name('queue.history');
+    Route::get('/queues', [QueueController::class, 'index'])->name('queues.index');
+    Route::patch('/queues/{id}/status', [QueueController::class, 'updateStatus'])->name('queues.updateStatus');
+    Route::get('/staff/dashboard', [StaffController::class, 'dashboard'])->name('staff.dashboard');
+    Route::get('/report/daily', [ReportController::class, 'daily'])->name('report.daily');
+    Route::get('/doctor/queue', [DoctorController::class, 'queueList'])->name('doctor.queue.list');
+    Route::get('/doctor/report', [ReportController::class, 'doctorReport'])->name('doctor.report.pdf');
+    Route::get('/admin/doctor/schedule', [DoctorScheduleController::class, 'index'])->name('doctor.schedule');
 });
 
-Route::get('/users', [UserController::class, 'index'])->name('users.index');
-Route::get('/users/create', [UserController::class, 'create'])->name('users.create'); 
-Route::post('/users', [UserController::class, 'store'])->name('users.store');
-Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit'); 
-Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update'); 
-Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
+Route::resource('users', UserController::class);
+
 require __DIR__.'/auth.php';

@@ -9,19 +9,19 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::create('doctor_schedules', function (Blueprint $table) {
+   // database/migrations/xxxx_xx_xx_create_doctor_schedules_table.php
+public function up(): void
+{
+    Schema::create('doctor_schedules', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // เชื่อมกับหมอ (ตาราง users)
+        $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); 
         $table->date('schedule_date');
         $table->time('start_time');
         $table->time('end_time');
-        $table->string('booking_id')->nullable();
         $table->enum('status', ['available', 'booked', 'cancelled'])->default('available');
         $table->timestamps();
-        });
-    }
+    });
+}
 
     /**
      * Reverse the migrations.
