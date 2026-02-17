@@ -12,54 +12,61 @@ class QueueController extends Controller
 {
     /**
      * Display: หน้ารวมรายการคิว (Staff/Admin)
-     * กรองตามคำค้นหา และ วันที่จากตารางแพทย์
      */
-    public function index(Request $request)
-    {
-        // ตรวจสอบสิทธิ์: ถ้าเป็นคนไข้ ให้เด้งไปหน้าประวัติของตัวเอง
-        if (strtolower(Auth::user()->role) === 'patient') {
-            return redirect()->route('queue.history');
-        }
-
-        // 1. ดึงวันที่ที่มีในตารางตารางหมอทั้งหมดมาทำ Dropdown
-        $availableDates = DoctorSchedule::select('schedule_date')
-            ->distinct()
-            ->orderBy('schedule_date', 'asc')
-            ->get();
-
-        // 2. เริ่มต้น Query ข้อมูลคิว
-        $query = Queue::with(['user', 'doctorSchedule.user']);
-
-        // 3. กรองตามวันที่ที่เลือก (สำคัญมาก)
-        // เมื่อเลือกวันที่ 24/02/2026 ระบบจะแสดงเฉพาะคิวในวันนั้นเท่านั้น
-        if ($request->filled('date')) {
-            $selectedDate = $request->date;
-            $query->whereHas('doctorSchedule', function($q) use ($selectedDate) {
-                $q->where('schedule_date', $selectedDate);
-            });
-        }
-
-        // 4. กรองตามคำค้นหา (เลขคิว หรือ ชื่อคนไข้)
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('labelNo', 'like', "%{$search}%")
-                  ->orWhereHas('user', function($u) use ($search) {
-                      $u->where('name', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        // 5. เรียงลำดับตามเลขคิว และแบ่งหน้าแสดงผล
-        // ใช้ appends(request()->query()) เพื่อให้ค่าวันที่ไม่หายเมื่อเปลี่ยนหน้า Pagination
-        $queues = $query->orderBy('labelNo', 'asc')
-                        ->paginate(10)
-                        ->appends($request->query());
-
-        // 6. ส่งข้อมูลไปยังหน้า View
-        return view('queues.index', compact('queues', 'availableDates'));
+   /**
+ * Display: หน้ารวมรายการคิว (Staff/Admin)
+ */
+/**
+ * Display: หน้ารวมรายการคิว (Staff/Admin)
+ */
+public function index(Request $request)
+{
+    // 1. ตรวจสอบสิทธิ์ (ถ้าเป็นคนไข้ให้เด้งไปหน้าประวัติ)
+    if (strtolower(Auth::user()->role) === 'patient') {
+        return redirect()->route('queue.history');
     }
 
+    // 2. รับค่าจาก Filter และ Search
+    $date = $request->input('date');
+    $search = $request->input('search');
+
+    // 3. เริ่ม Query พร้อมดึงความสัมพันธ์ (Eager Loading)
+    $query = Queue::with(['user', 'doctorSchedule.user']);
+
+    // ⭐ กรองตามวันที่ (ข้ามไปเช็คที่ตาราง doctor_schedules)
+    if ($date) {
+        $query->whereHas('doctorSchedule', function($q) use ($date) {
+            $q->where('schedule_date', $date);
+        });
+    }
+
+    // ⭐ กรองตามคำค้นหา (เลขคิว, ชื่อคนไข้, หรือชื่อหมอ)
+    if ($search) {
+        $query->where(function($q) use ($search) {
+            $q->where('labelNo', 'like', "%{$search}%")
+              ->orWhereHas('user', function ($u) use ($search) {
+                  $u->where('name', 'like', "%{$search}%");
+              })
+              ->orWhereHas('doctorSchedule.user', function ($d) use ($search) {
+                  $d->where('name', 'like', "%{$search}%");
+              });
+        });
+    }
+
+    // 4. ดึงข้อมูลรายการคิว (เรียงลำดับตามความเหมาะสม)
+    // เปลี่ยนจาก id desc เป็น labelNo asc หรือเลือกตามต้องการครับ
+    $queues = $query->orderBy('labelNo', 'asc') 
+        ->paginate(10)
+        ->appends($request->query());
+
+    // 5. ดึงรายการวันที่ทั้งหมดที่มีในระบบ (เพื่อให้ Select Box มีตัวเลือกวันที่)
+    $availableDates = DoctorSchedule::select('schedule_date')
+        ->distinct()
+        ->orderBy('schedule_date', 'asc')
+        ->get();
+
+    return view('queues.index', compact('queues', 'availableDates'));
+}
     /**
      * Book: เลือกตารางหมอ (สำหรับเริ่มจองคิว)
      */
@@ -142,13 +149,15 @@ class QueueController extends Controller
     }
 
     /**
-     * History: ดูประวัติการจอง (สำหรับคนไข้)
+     * ⭐ แก้ไขแล้ว: History: ดูประวัติการจอง (สำหรับคนไข้)
+     * ดึงชื่อแพทย์และเรียงลำดับล่าสุดมาแสดง
      */
     public function history()
     {
+        // โหลด doctorSchedule.user เพื่อให้แสดงชื่อแพทย์ในหน้าประวัติได้
         $queues = Queue::with(['doctorSchedule.user'])
             ->where('userId', Auth::id())
-            ->latest()
+            ->orderBy('created_at', 'desc') // เอาประวัติล่าสุดขึ้นก่อน
             ->paginate(10);
 
         return view('queues.history', compact('queues'));
@@ -173,11 +182,16 @@ class QueueController extends Controller
     /**
      * Cancel: ยกเลิกคิว
      */
-    public function cancel($id)
-    {
-        $queue = Queue::findOrFail($id);
-        $queue->update(['status' => 'ยกเลิก']);
+    /**
+ * Cancel: ยกเลิกคิว
+ */
+public function cancel($id)
+{
+    $queue = Queue::findOrFail($id);
+    
+    // เปลี่ยนจาก 'cancelled' เป็น 'ยกเลิก' ให้ตรงกับค่าใน Database
+    $queue->update(['status' => 'ยกเลิก']);
 
-        return redirect()->back()->with('success', 'ยกเลิกคิวเรียบร้อยแล้ว');
-    }
+    return redirect()->back()->with('success', 'ยกเลิกคิวเรียบร้อยแล้ว');
+}
 }

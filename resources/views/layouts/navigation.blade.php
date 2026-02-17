@@ -9,14 +9,13 @@
                 </div>
 
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    
                     @auth
-                        {{-- 1. เมนูหน้าแรก (Dashboard) - แสดงสำหรับทุก Role ที่ Login แล้ว --}}
+                        {{-- 1. เมนูหน้าแรก (Dashboard) --}}
                         <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                             {{ __('หน้าแรก') }}
                         </x-nav-link>
 
-                        {{-- 2. เมนูเฉพาะ ADMIN เท่านั้น (จัดการข้อมูลผู้ใช้) --}}
+                        {{-- 2. เมนูเฉพาะ ADMIN เท่านั้น --}}
                         @if (strtolower(auth()->user()->role) === 'admin')
                             <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
                                 {{ __('จัดการข้อมูลผู้ใช้') }}
@@ -29,13 +28,11 @@
                                 {{ __('จัดการตารางการทำงานของหมอ') }}
                             </x-nav-link>
 
-                            <x-nav-link :href="route('queues.index')" :active="request()->routeIs('queues.index')">
+                            <x-nav-link :href="route('queues.index')" :active="request()->routeIs('queues.*')">
                                 {{ __('จัดการคิวเข้ารับบริการ') }}
                             </x-nav-link>
-                        @endif
 
-                        {{-- 4. เมนูรายงาน (Dropdown) - เฉพาะ ADMIN --}}
-                        @if (strtolower(auth()->user()->role) === 'admin')
+                            {{-- ⭐ 4. เมนูรายงาน (Dropdown) - เปิดให้ทั้ง ADMIN และ STAFF เห็น --}}
                             <div class="hidden sm:flex sm:items-center sm:ms-4">
                                 <x-dropdown align="right" width="48">
                                     <x-slot name="trigger">
@@ -49,7 +46,8 @@
                                         </button>
                                     </x-slot>
                                     <x-slot name="content">
-                                        <x-dropdown-link href="{{ route('report.users.pdf') }}">รายงานบัญชีผู้ใช้ (PDF)</x-dropdown-link>
+                                        {{-- ใช้ Route รายงานเดิมที่คุณมีอยู่ --}}
+                                        <x-dropdown-link href="{{ route('reports.users.pdf') }}">รายงานบัญชีผู้ใช้ (PDF)</x-dropdown-link>
                                         <x-dropdown-link href="{{ route('report.service.pdf') }}">รายงานผู้เข้ารับบริการ (PDF)</x-dropdown-link>
                                     </x-slot>
                                 </x-dropdown>
@@ -69,6 +67,7 @@
                 </div>
             </div>
 
+            {{-- Profile Dropdown --}}
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">

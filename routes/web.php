@@ -9,6 +9,8 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\DoctorScheduleController;
 
+
+
 // --- หน้าแรกและ Dashboard ---
 Route::get('/', function () { return view('welcome'); });
 Route::get('/dashboard', function () { return view('dashboard'); })->middleware(['auth', 'verified'])->name('dashboard');
@@ -47,8 +49,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/doctor/schedule', [DoctorScheduleController::class, 'index'])->name('doctor.schedule');
 
     // รายงาน PDF ต่างๆ
-    Route::get('/admin/report/users/pdf', [ReportController::class, 'usersPdf'])->name('report.users.pdf');
     Route::get('/admin/report/services/pdf', [ReportController::class, 'servicesPdf'])->name('report.service.pdf');
+    Route::get('/admin/report/users/pdf', [ReportController::class, 'usersPdf'])->name('reports.users.pdf');
 });
 
 // จัดการข้อมูลผู้ใช้

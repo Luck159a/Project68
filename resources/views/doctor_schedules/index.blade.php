@@ -4,8 +4,10 @@
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('ตารางเวลาแพทย์ & การจองคิว') }}
             </h2>
-            @if(Auth::user()->role === 'admin' || Auth::user()->role === 'staff')
-            <a href="{{ route('doctor-schedules.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">
+            
+            {{-- ส่วนที่ 1: ปุ่มเพิ่มตารางเวลาสำหรับ Admin และ Staff --}}
+            @if(in_array(Auth::user()->role, ['admin', 'staff']))
+            <a href="{{ route('doctor-schedules.create') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
@@ -17,8 +19,16 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            {{-- ส่วนแสดง Alert Success (ถ้ามี) --}}
+            @if(session('success'))
+                <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 
+                {{-- ระบบค้นหา --}}
                 <form method="GET" action="{{ route('doctor-schedules.index') }}" class="mb-6 flex gap-4">
                     <input type="text" name="search" placeholder="ค้นหาชื่อหมอ..." 
                            class="border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 w-64"
@@ -57,20 +67,22 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                    <div class="flex justify-center gap-3">
+                                    <div class="flex justify-center items-center gap-3">
+                                        {{-- ปุ่มจองคิว (สำหรับทุกคน) --}}
                                         @if($item->status == 'available')
                                         <a href="{{ route('queues.create', $item->id) }}" 
-                                           class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition shadow-sm">
-                                            จองคิวนี้
+                                           class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition shadow-sm text-xs">
+                                             จองคิวนี้
                                         </a>
                                         @endif
 
-                                        @if(Auth::user()->role === 'admin' || Auth::user()->role === 'staff')
-                                        <div class="flex items-center border-l pl-3 gap-2">
-                                            <a href="{{ route('doctor-schedules.edit', $item) }}" class="text-amber-600 hover:text-amber-900">แก้ไข</a>
+                                        {{-- ส่วนที่ 2: ปุ่มแก้ไข/ลบ สำหรับ Admin และ Staff --}}
+                                        @if(in_array(Auth::user()->role, ['admin', 'staff']))
+                                        <div class="flex items-center border-l pl-3 gap-3">
+                                            <a href="{{ route('doctor-schedules.edit', $item) }}" class="text-amber-600 hover:text-amber-900 text-xs font-bold">แก้ไข</a>
                                             <form action="{{ route('doctor-schedules.destroy', $item) }}" method="POST" class="inline">
                                                 @csrf @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('ยืนยันการลบตารางเวลานี้?')">
+                                                <button type="submit" class="text-red-600 hover:text-red-900 text-xs font-bold" onclick="return confirm('ยืนยันการลบตารางเวลานี้?')">
                                                     ลบ
                                                 </button>
                                             </form>

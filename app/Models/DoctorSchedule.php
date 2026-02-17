@@ -19,11 +19,15 @@ class DoctorSchedule extends Model
     /**
      * เชื่อมกับ User (หมอ)
      */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
+    // ไฟล์ app/Models/DoctorSchedule.php
 
+ // ไฟล์ app/Models/DoctorSchedule.php
+
+    public function user()
+{
+    // เปลี่ยนจาก 'userId' เป็น 'user_id' ให้ตรงกับใน $fillable และ Database
+    return $this->belongsTo(User::class, 'user_id'); 
+}
     /**
      * เชื่อมกับตาราง Queues (การจองคิว)
      * หนึ่งตารางเวลาของหมอ สามารถมีการจองได้หลายคิว (HasMany)
