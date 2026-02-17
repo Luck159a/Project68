@@ -20,9 +20,10 @@ class Queue extends Model
     // 2. เชื่อมโยงกับตารางตารางเวลายืนยัน (แก้ RelationNotFoundException)
     // ตรวจสอบชื่อ Model (DoctorSchedule) ให้ตรงกับที่คุณใช้จริง
     public function doctorSchedule()
-    {
-        return $this->belongsTo(DoctorSchedule::class, 'docschId');
-    }
+{
+    // ตรวจสอบว่า Foreign Key คือ docschId ตามที่คุณใช้ใน store() หรือไม่
+    return $this->belongsTo(DoctorSchedule::class, 'docschId');
+}
 
     // 3. เชื่อมโยงกับตาราง User (คนไข้ที่จอง)
     public function user()

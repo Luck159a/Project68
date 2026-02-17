@@ -11,31 +11,63 @@ use Illuminate\Support\Facades\Auth;
 class QueueController extends Controller
 {
     /**
-     * Display: แสดงรายการคิว พร้อมระบบ Search และ Pagination
+     * Display: หน้ารวมรายการคิว (Staff/Admin)
+     * กรองตามคำค้นหา และ วันที่จากตารางแพทย์
      */
     public function index(Request $request)
     {
-        $queues = Queue::with(['doctorSchedule.user'])
-            ->where('userId', Auth::id()) 
-            ->when($request->search, function($query, $search) {
-                $query->where('labelNo', 'like', "%{$search}%")
-                      ->orWhere('status', 'like', "%{$search}%");
-            })
-            ->latest()
-            ->paginate(10);
+        // ตรวจสอบสิทธิ์: ถ้าเป็นคนไข้ ให้เด้งไปหน้าประวัติของตัวเอง
+        if (strtolower(Auth::user()->role) === 'patient') {
+            return redirect()->route('queue.history');
+        }
 
-        return view('queues.index', compact('queues'));
+        // 1. ดึงวันที่ที่มีในตารางตารางหมอทั้งหมดมาทำ Dropdown
+        $availableDates = DoctorSchedule::select('schedule_date')
+            ->distinct()
+            ->orderBy('schedule_date', 'asc')
+            ->get();
+
+        // 2. เริ่มต้น Query ข้อมูลคิว
+        $query = Queue::with(['user', 'doctorSchedule.user']);
+
+        // 3. กรองตามวันที่ที่เลือก (สำคัญมาก)
+        // เมื่อเลือกวันที่ 24/02/2026 ระบบจะแสดงเฉพาะคิวในวันนั้นเท่านั้น
+        if ($request->filled('date')) {
+            $selectedDate = $request->date;
+            $query->whereHas('doctorSchedule', function($q) use ($selectedDate) {
+                $q->where('schedule_date', $selectedDate);
+            });
+        }
+
+        // 4. กรองตามคำค้นหา (เลขคิว หรือ ชื่อคนไข้)
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('labelNo', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($u) use ($search) {
+                      $u->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // 5. เรียงลำดับตามเลขคิว และแบ่งหน้าแสดงผล
+        // ใช้ appends(request()->query()) เพื่อให้ค่าวันที่ไม่หายเมื่อเปลี่ยนหน้า Pagination
+        $queues = $query->orderBy('labelNo', 'asc')
+                        ->paginate(10)
+                        ->appends($request->query());
+
+        // 6. ส่งข้อมูลไปยังหน้า View
+        return view('queues.index', compact('queues', 'availableDates'));
     }
 
     /**
-     * Book: แสดงรายการตารางเวลาของหมอทั้งหมดที่เปิดให้จอง
-     * แก้ไข Error: Call to undefined method App\Http\Controllers\QueueController::book()
+     * Book: เลือกตารางหมอ (สำหรับเริ่มจองคิว)
      */
     public function book()
     {
-        // ดึงข้อมูลตารางหมอที่ยังมาไม่ถึง (อนาคต) เพื่อให้เลือกจอง
         $schedules = DoctorSchedule::with('user')
-            ->where('start_time', '>=', now())
+            ->where('schedule_date', '>=', now()->toDateString())
+            ->orderBy('schedule_date', 'asc')
             ->orderBy('start_time', 'asc')
             ->get();
 
@@ -43,7 +75,7 @@ class QueueController extends Controller
     }
 
     /**
-     * Create View: คำนวณช่วงเวลาละ 20 นาที และเช็กคิวว่าง
+     * Create View: เลือกช่วงเวลาที่จะจอง
      */
     public function create($scheduleId)
     {
@@ -57,14 +89,12 @@ class QueueController extends Controller
         while ($startTime->copy()->addMinutes(20) <= $endTime) {
             $slotEnd = $startTime->copy()->addMinutes(20);
             $timeRange = $startTime->format('H:i') . ' - ' . $slotEnd->format('H:i');
-            
             $isBooked = in_array($timeRange, $bookedPeriods);
 
             $slots[] = [
                 'time' => $timeRange,
                 'is_available' => !$isBooked
             ];
-
             $startTime->addMinutes(20);
         }
 
@@ -72,7 +102,7 @@ class QueueController extends Controller
     }
 
     /**
-     * Store: บันทึกข้อมูลการจองใหม่
+     * Store: บันทึกข้อมูลการจองคิวลงฐานข้อมูล
      */
     public function store(Request $request)
     {
@@ -81,7 +111,6 @@ class QueueController extends Controller
             'period' => 'required',
         ]);
 
-        // Double Check ป้องกันการจองซ้ำ
         $exists = Queue::where('docschId', $request->docschId)
                        ->where('period', $request->period)
                        ->exists();
@@ -90,7 +119,7 @@ class QueueController extends Controller
             return back()->withErrors(['period' => 'ขออภัย ช่วงเวลานี้ถูกจองไปแล้ว']);
         }
 
-        Queue::create([
+        $queue = Queue::create([
             'docschId' => $request->docschId,
             'userId' => Auth::id(),
             'labelNo' => 'Q-' . strtoupper(substr(uniqid(), -4)),
@@ -100,11 +129,33 @@ class QueueController extends Controller
             'created_by' => Auth::id()
         ]);
 
-        return redirect()->route('queues.index')->with('success', 'จองคิวสำเร็จ!');
+        return redirect()->route('queue.success', $queue->id)->with('success', 'จองคิวสำเร็จ!');
     }
 
     /**
-     * Update Status: เปลี่ยนสถานะคิว (รอเรียก -> กำลังใช้บริการ -> เสร็จสิ้น)
+     * Success: หน้าแสดงใบยืนยันหลังจองสำเร็จ
+     */
+    public function success($id)
+    {
+        $queue = Queue::with(['doctorSchedule.user'])->findOrFail($id);
+        return view('queues.success', compact('queue'));
+    }
+
+    /**
+     * History: ดูประวัติการจอง (สำหรับคนไข้)
+     */
+    public function history()
+    {
+        $queues = Queue::with(['doctorSchedule.user'])
+            ->where('userId', Auth::id())
+            ->latest()
+            ->paginate(10);
+
+        return view('queues.history', compact('queues'));
+    }
+
+    /**
+     * Update Status: สำหรับเจ้าหน้าที่เรียกคิว หรือจบงาน
      */
     public function updateStatus(Request $request, $id)
     {
@@ -116,13 +167,17 @@ class QueueController extends Controller
         $queue->status = $request->status;
         $queue->save();
 
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true, 
-                'message' => 'อัปเดตสถานะเป็น ' . $request->status . ' เรียบร้อยแล้ว'
-            ]);
-        }
-
         return back()->with('success', 'อัปเดตสถานะสำเร็จ!');
-        }
+    }
+
+    /**
+     * Cancel: ยกเลิกคิว
+     */
+    public function cancel($id)
+    {
+        $queue = Queue::findOrFail($id);
+        $queue->update(['status' => 'ยกเลิก']);
+
+        return redirect()->back()->with('success', 'ยกเลิกคิวเรียบร้อยแล้ว');
+    }
 }

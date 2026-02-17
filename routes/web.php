@@ -7,14 +7,13 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\DoctorController;
-use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\DoctorScheduleController;
 
 // --- หน้าแรกและ Dashboard ---
 Route::get('/', function () { return view('welcome'); });
 Route::get('/dashboard', function () { return view('dashboard'); })->middleware(['auth', 'verified'])->name('dashboard');
 
-// --- จัดการตารางเวลาหมอ ---
+// --- จัดการตารางเวลาหมอ (Resource Route สำหรับ CRUD) ---
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('doctor-schedules', DoctorScheduleController::class);
 });
@@ -27,17 +26,19 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // ✅ การจองคิว
+    // ✅ ส่วนของการจองคิว (Patient/User)
     Route::get('/queue/book/{scheduleId}', [QueueController::class, 'create'])->name('queues.create');
     Route::post('/queue/book', [QueueController::class, 'store'])->name('queues.store');
-
-    // จัดการคิวและรายงานทั่วไป
-    Route::get('/queue/my', [QueueController::class, 'myQueue'])->name('queue.my');
-    Route::get('/queue/current', [QueueController::class, 'currentQueue'])->name('queue.current');
+    Route::get('/queue/success/{id}', [QueueController::class, 'success'])->name('queue.success');
     Route::get('/queue/history', [QueueController::class, 'history'])->name('queue.history');
+
+    // ✅ ส่วนของการจัดการคิว (Admin/Staff)
     Route::get('/queues', [QueueController::class, 'index'])->name('queues.index');
     Route::patch('/queues/{id}/status', [QueueController::class, 'updateStatus'])->name('queues.updateStatus');
     
+    // ⭐ เพิ่มใหม่: Route สำหรับยกเลิกคิว (เพื่อรองรับปุ่มสีแดงที่คุณต้องการ)
+    Route::patch('/queues/{id}/cancel', [QueueController::class, 'cancel'])->name('queues.cancel');
+
     // ส่วนของเจ้าหน้าที่และหมอ
     Route::get('/staff/dashboard', [StaffController::class, 'dashboard'])->name('staff.dashboard');
     Route::get('/report/daily', [ReportController::class, 'daily'])->name('report.daily');
@@ -45,12 +46,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/doctor/report', [ReportController::class, 'doctorReport'])->name('doctor.report.pdf');
     Route::get('/admin/doctor/schedule', [DoctorScheduleController::class, 'index'])->name('doctor.schedule');
 
-    // ✅ เพิ่มส่วนนี้: แก้ปัญหา Route [report.users.pdf] และ [report.service.pdf] not defined
-    // มั่นใจว่าใน ReportController มีฟังก์ชันชื่อ usersPdf และ servicesPdf นะครับ
+    // รายงาน PDF ต่างๆ
     Route::get('/admin/report/users/pdf', [ReportController::class, 'usersPdf'])->name('report.users.pdf');
     Route::get('/admin/report/services/pdf', [ReportController::class, 'servicesPdf'])->name('report.service.pdf');
 });
 
-Route::resource('users', UserController::class);
+// จัดการข้อมูลผู้ใช้
+Route::resource('users', UserController::class)->middleware('auth');
 
 require __DIR__.'/auth.php';
