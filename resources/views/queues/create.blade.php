@@ -23,60 +23,39 @@
                 <form action="{{ route('queues.store') }}" method="POST">
                     @csrf
                     <input type="hidden" name="docschId" value="{{ $schedule->id }}">
+                    <input type="hidden" name="period" id="selected_period" required>
 
                     <h3 class="font-bold text-lg mb-6 flex items-center">
                         เลือกช่วงเวลาที่ต้องการ
                     </h3>
-               
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        @foreach($slots as $slot)
-            @if($slot['is_available'])
-                <button type="button" 
-                    onclick="selectTime(this, '{{ $slot['time'] }}')"
-                    class="time-slot border-2 border-blue-500 text-blue-500 py-2 px-4 rounded-lg hover:bg-blue-50 transition-colors duration-200">
-                    {{ $slot['time'] }}
-                </button>
-            @else
-                <button type="button" disabled 
-                    class="bg-gray-200 text-gray-400 py-2 px-4 rounded-lg cursor-not-allowed">
-                    {{ $slot['time'] }} (เต็ม)
-                </button>
-            @endif
-        @endforeach
-    </div>
-
-    @error('period')
-        <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
-    @enderror
 
                     <div class="space-y-4 mb-8">
                         @foreach($slots as $slot)
                             <div class="flex items-center justify-between p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors">
                                 <span class="text-lg font-semibold text-gray-700">{{ $slot['time'] }}</span>
 
-                                <label class="relative inline-block">
+                                <div class="relative inline-block">
                                     @if($slot['is_available'])
-                                        <input type="radio" name="period" value="{{ $slot['time'] }}" class="peer hidden" required>
-                                        
-                                        <div class="cursor-pointer py-2 px-6 rounded-md font-medium text-sm transition-all
-                                                    bg-blue-500 text-white border border-blue-600
-                                                    hover:bg-blue-600
-                                                    peer-checked:bg-green-600 peer-checked:border-green-700 shadow-sm"
-                                                    onclick="selectTime(this, '{{ $slot['time'] }}')">
+                                        <button type="button" 
+                                            onclick="selectTimeList(this, '{{ $slot['time'] }}')"
+                                            class="time-button cursor-pointer py-2 px-6 rounded-md font-medium text-sm transition-all
+                                                   bg-blue-500 text-white border border-blue-600 hover:bg-blue-600 shadow-sm">
                                             ว่าง
-
-                                        </div>
-                                            
+                                        </button>
                                     @else
                                         <div class="py-2 px-6 rounded-md font-medium text-sm
                                                     bg-red-500 text-white border border-red-600 opacity-60 cursor-not-allowed">
                                             เต็มแล้ว
                                         </div>
                                     @endif
-                                </label>
+                                </div>
                             </div>
                         @endforeach
                     </div>
+
+                    @error('period')
+                        <p class="text-red-500 text-sm mt-2 mb-4">{{ $message }}</p>
+                    @enderror
 
                     <div class="mb-8">
                         <label class="block font-bold text-gray-700 mb-2">หมายเหตุ (ระบุอาการเบื้องต้น)</label>
@@ -91,25 +70,27 @@
                         </button>
                     </div>
                 </form>
-
             </div>
         </div>
     </div>
+
     <script>
-function selectTime(element, time) {
-    // 1. ล้างสีปุ่มอื่นๆ ให้กลับเป็นสีฟ้าขาวเหมือนเดิม (Tailwind Classes)
-    const allButtons = document.querySelectorAll('.time-slot');
-    allButtons.forEach(btn => {
-        btn.classList.remove('bg-blue-600', 'text-white'); // เอาสีที่เลือกออก
-        btn.classList.add('border-blue-500', 'text-blue-500'); // ใส่สีเดิมกลับไป
-    });
+    function selectTimeList(element, time) {
+        // 1. คืนค่าสีปุ่ม "ว่าง" ทั้งหมดให้เป็นสีฟ้าปกติ
+        const allButtons = document.querySelectorAll('.time-button');
+        allButtons.forEach(btn => {
+            btn.classList.remove('bg-green-700', 'border-green-700');
+            btn.classList.add('bg-blue-500', 'border-blue-600');
+            btn.innerText = 'ว่าง';
+        });
 
-    // 2. ไฮไลท์ปุ่มที่ถูกคลิก (เปลี่ยนเป็นสีเข้ม)
-    element.classList.remove('border-blue-500', 'text-blue-500');
-    element.classList.add('bg-blue-600', 'text-white');
+        // 2. เปลี่ยนปุ่มที่ถูกกดให้เป็นสีเขียว เพื่อให้รู้ว่าเลือกอันนี้
+        element.classList.remove('bg-blue-500', 'border-blue-600');
+        element.classList.add('bg-green-700', 'border-green-700');
+        element.innerText = 'เลือกแล้ว';
 
-    // 3. เอาค่าเวลาไปใส่ใน Hidden Input เพื่อส่งเข้า Controller
-    document.getElementById('selected_period').value = time;
-}
-</script>
+        // 3. ใส่ค่าเวลาลงใน Hidden Input เพื่อส่งฟอร์ม
+        document.getElementById('selected_period').value = time;
+    }
+    </script>
 </x-app-layout>
