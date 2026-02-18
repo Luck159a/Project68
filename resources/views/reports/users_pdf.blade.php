@@ -3,65 +3,69 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <style>
-        /* 1. โหลดฟอนต์ Sarabun จากโฟลเดอร์ public/fonts */
+        /* 1. กำหนด Font Face โดยใช้ base_path เพื่อให้ DomPDF หาไฟล์บน Windows เจอแน่นอน */
         @font-face {
             font-family: 'Sarabun';
             font-style: normal;
             font-weight: normal;
-            src: url("{{ public_path('fonts/Sarabun-Thin.ttf') }}") format('truetype');
+            src: url("{{ base_path('public/fonts/Sarabun-Regular.ttf') }}") format('truetype');
         }
         @font-face {
             font-family: 'Sarabun';
             font-style: normal;
             font-weight: bold;
-            src: url("{{ public_path('fonts/Sarabun-Bold.ttf') }}") format('truetype');
+            src: url("{{ base_path('public/fonts/Sarabun-Bold.ttf') }}") format('truetype');
         }
 
-        /* 2. ตั้งค่าพื้นฐาน ให้บังคับใช้ฟอนต์ Sarabun ทุกจุด */
+        /* 2. บังคับใช้ฟอนต์ Sarabun กับทุกจุดในเอกสาร */
+        * {
+            font-family: 'Sarabun', sans-serif !important;
+        }
+
+        table, th, td {
+            font-family: 'Sarabun', sans-serif !important;
+        }
+
         body {
-            font-family: 'Sarabun', sans-serif;
             font-size: 16px;
-            line-height: 1.4;
-            color: #333;
+            line-height: 1.5;
+            color: #000;
             margin: 0;
             padding: 0;
         }
 
         h2 {
-            font-family: 'Sarabun', sans-serif;
-            font-weight: bold;
             text-align: center;
             font-size: 24px;
-            margin-top: 0;
+            margin-bottom: 10px;
         }
 
-        .report-info {
-            font-family: 'Sarabun', sans-serif;
+        .report-header {
             margin-bottom: 20px;
             font-size: 14px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 10px;
         }
 
-        /* 3. จัดการตารางและการแสดงผลภาษาไทยในช่อง */
         table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* ช่วยควบคุมความกว้างของคอลัมน์ */
+            table-layout: fixed;
         }
 
         th {
-            font-family: 'Sarabun', sans-serif;
+            background-color: #f8f9fa;
             font-weight: bold;
-            background-color: #f2f2f2;
-            border: 1px solid #000;
-            padding: 10px 5px;
             text-align: center;
+            border: 1px solid #000;
+            padding: 8px;
         }
 
         td {
-            font-family: 'Sarabun', sans-serif;
             border: 1px solid #000;
-            padding: 8px 5px;
-            word-wrap: break-word; /* ป้องกันข้อความยาวล้นช่อง */
+            padding: 8px;
+            vertical-align: middle;
+            word-wrap: break-word; 
         }
 
         .text-center {
@@ -72,7 +76,7 @@
 <body>
     <h2>รายงานบัญชีผู้ใช้</h2>
     
-    <div class="report-info">
+    <div class="report-header">
         <strong>วันที่ออกรายงาน:</strong> {{ date('d/m/Y') }} <br>
         <strong>จำนวนผู้ใช้ทั้งหมด:</strong> {{ count($users) }} ราย
     </div>
@@ -81,8 +85,8 @@
         <thead>
             <tr>
                 <th width="10%">ID</th>
-                <th width="40%">ชื่อ-นามสกุล</th>
-                <th width="35%">อีเมล</th>
+                <th width="35%">ชื่อ-นามสกุล</th>
+                <th width="40%">อีเมล</th>
                 <th width="15%">บทบาท</th>
             </tr>
         </thead>
@@ -92,7 +96,17 @@
                 <td class="text-center">{{ $user->id }}</td>
                 <td>{{ $user->name }}</td>
                 <td>{{ $user->email }}</td>
-                <td class="text-center">{{ ucfirst($user->role) }}</td>
+                <td class="text-center">
+                    @php
+                        $roles = [
+                            'admin' => 'ผู้ดูแลระบบ',
+                            'doctor' => 'หมอ',
+                            'staff' => 'เจ้าหน้าที่',
+                            'patient' => 'ผู้ป่วย'
+                        ];
+                    @endphp
+                    {{ $roles[$user->role] ?? ucfirst($user->role) }}
+                </td>
             </tr>
             @empty
             <tr>

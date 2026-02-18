@@ -50,7 +50,8 @@ Route::middleware('auth')->group(function () {
 
     // รายงาน PDF ต่างๆ
     Route::get('/admin/report/services/pdf', [ReportController::class, 'servicesPdf'])->name('report.service.pdf');
-    Route::get('/admin/report/users/pdf', [ReportController::class, 'usersPdf'])->name('reports.users.pdf');
+// เปลี่ยนจาก 'usersPdf' เป็น 'exportUserPDF' ให้ตรงกับที่แก้ใน Controller ล่าสุด
+Route::get('/admin/report/users/pdf', [App\Http\Controllers\ReportController::class, 'exportUserPDF'])->name('reports.users.pdf');
 });
 
 // จัดการข้อมูลผู้ใช้
