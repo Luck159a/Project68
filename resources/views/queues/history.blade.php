@@ -9,7 +9,6 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 
-                {{-- ตรวจสอบว่ามีข้อมูลการจองหรือไม่ --}}
                 @if($queues->count() > 0)
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -20,17 +19,20 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ช่วงเวลา</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">การดำเนินการ</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($queues as $q)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap font-bold text-indigo-600">
-                                            {{ $q->labelNo }}
+                                    <tr class="hover:bg-gray-50 transition duration-150">
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            {{-- ✅ แก้ไข: ใส่ลิงก์ครอบเลขคิวเพื่อให้กดไปดูหน้าลำดับคิวได้ --}}
+                                            <a href="{{ route('queue.success', $q->id) }}" class="text-indigo-600 font-bold hover:text-indigo-900 hover:underline">
+                                                {{ $q->labelNo }}
+                                            </a>
                                         </td>
                                         
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            {{-- ดึงชื่อหมอผ่านความสัมพันธ์ (Relation) --}}
                                             {{ $q->doctorSchedule->user->name ?? 'ไม่ระบุชื่อแพทย์' }}
                                         </td>
                                         
@@ -39,11 +41,10 @@
                                         </td>
 
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            {{ $q->period }}
+                                            {{ $q->period }} น.
                                         </td>
                                         
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            {{-- ตรวจสอบสถานะเพื่อเปลี่ยนสี Badge --}}
                                             @if($q->status === 'เสร็จสิ้น')
                                                 <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                                     เสร็จสิ้น
@@ -62,6 +63,13 @@
                                                 </span>
                                             @endif
                                         </td>
+
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            {{-- ✅ เพิ่มปุ่มเพื่อให้ชัดเจนว่ากดดูรายละเอียดได้ --}}
+                                            <a href="{{ route('queue.success', $q->id) }}" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded-md transition">
+                                                ดูรายละเอียด
+                                            </a>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -73,7 +81,6 @@
                     </div>
 
                 @else
-                    {{-- ส่วนแสดงผลเมื่อไม่มีข้อมูล --}}
                     <div class="text-center py-12">
                         <div class="flex justify-center">
                             <svg class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -83,7 +90,6 @@
                         <h3 class="mt-4 text-lg font-medium text-gray-900">ยังไม่มีประวัติการจอง</h3>
                         <p class="mt-2 text-sm text-gray-500">คุณยังไม่ได้ทำการจองคิวในระบบในขณะนี้</p>
                         <div class="mt-6">
-                            {{-- แก้ไขเป็น URL ตรงเพื่อความแน่นอนตามภาพ 17001e --}}
                             <a href="{{ url('/doctor-schedules') }}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
                                 ไปหน้าจองคิว
                             </a>

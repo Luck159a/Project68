@@ -1,6 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
+            {{-- หัวข้อระบบจัดการคิว --}}
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('ระบบจัดการคิวเข้ารับบริการ') }}
             </h2>
@@ -38,14 +39,25 @@
                         </select>
                     </div>
 
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-3">
+                        {{-- ปุ่มค้นหาหลัก --}}
                         <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700 transition shadow-sm font-medium">
                             ค้นหา
                         </button>
 
+                        {{-- ปุ่มล้างค่า: แสดงเฉพาะเมื่อมีการค้นหา --}}
                         @if(request('date') || request('search'))
-                            <a href="{{ route('queues.index') }}" class="text-sm text-gray-500 hover:text-red-600">ล้างค่า</a>
+                            <a href="{{ route('queues.index') }}" class="text-sm text-gray-500 hover:text-red-600 transition">ล้างค่า</a>
                         @endif
+
+                        {{-- ปุ่มดาวน์โหลด PDF: แสดงตลอดเวลา --}}
+                        <a href="{{ route('admin.queues.export-pdf', request()->all()) }}" target="_blank"
+                           class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 shadow-md transition ease-in-out duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            ดาวน์โหลด PDF
+                        </a>
                     </div>
                 </form>
 
@@ -56,7 +68,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">เลขคิว</th>
                                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">ช่วงเวลา</th>
                                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">คนไข้</th>
-                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">แพทย์</th> {{-- เพิ่มหัวข้อ --}}
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">แพทย์</th>
                                 <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">สถานะ</th>
                                 <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">การดำเนินการ</th>
                             </tr>
@@ -74,12 +86,11 @@
                                     {{ $item->user->name ?? 'ไม่พบชื่อคนไข้' }}
                                 </td>
 
-                                {{-- ⭐ ส่วนแสดงชื่อแพทย์ที่เพิ่มเข้ามา --}}
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                                     @if(!$item->doctorSchedule)
-                                        <span class="text-red-500 text-xs">Error: ไม่พบตารางเวร (ID: {{ $item->docschId }})</span>
+                                        <span class="text-red-500 text-xs">Error: ไม่พบตารางเวร</span>
                                     @elseif(!$item->doctorSchedule->user)
-                                        <span class="text-orange-500 text-xs">Error: พบตารางเวร แต่ไม่พบชื่อหมอ</span>
+                                        <span class="text-orange-500 text-xs">Error: ไม่พบชื่อหมอ</span>
                                     @else
                                         <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200 text-xs font-semibold">
                                             {{ $item->doctorSchedule->user->name }}
@@ -103,7 +114,6 @@
                                 </td>
                                 
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex justify-center gap-2">
-                                    {{-- ... ปุ่มดำเนินการเหมือนเดิม ... --}}
                                     @if($item->status === 'รอเรียก')
                                         <form action="{{ route('queues.updateStatus', $item->id) }}" method="POST">
                                             @csrf @method('PATCH')
@@ -141,6 +151,7 @@
                 <div class="mt-4">
                     {{ $queues->appends(request()->query())->links() }}
                 </div>
+
             </div>
         </div>
     </div>

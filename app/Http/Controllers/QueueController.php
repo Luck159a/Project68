@@ -7,7 +7,7 @@ use App\Models\DoctorSchedule;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-
+use Barryvdh\DomPDF\Facade\Pdf;
 class QueueController extends Controller
 {
     /**
@@ -144,8 +144,18 @@ public function index(Request $request)
      */
     public function success($id)
     {
-        $queue = Queue::with(['doctorSchedule.user'])->findOrFail($id);
-        return view('queues.success', compact('queue'));
+       $queue = Queue::with(['user', 'doctorSchedule.user'])->findOrFail($id);
+
+    // 1. หาจำนวนคิวก่อนหน้า (นับเฉพาะคนที่สถานะยังไม่เสร็จสิ้น/ไม่ยกเลิก และจองในตารางเดียวกันที่มาก่อนเรา)
+    $queueBeforeCount = Queue::where('docschId', $queue->docschId)
+        ->where('id', '<', $queue->id)
+        ->whereIn('status', ['รอเรียก', 'กำลังใช้บริการ'])
+        ->count();
+
+    // 2. ลำดับคิวของคุณในวันนั้น
+    $myOrder = $queueBeforeCount + 1;
+
+    return view('queues.success', compact('queue', 'queueBeforeCount', 'myOrder'));
     }
 
     /**
@@ -183,7 +193,7 @@ public function index(Request $request)
      * Cancel: ยกเลิกคิว
      */
     /**
- * Cancel: ยกเลิกคิว
+ * Cancel: ยกเลิกคิว  
  */
 public function cancel($id)
 {
@@ -193,5 +203,73 @@ public function cancel($id)
     $queue->update(['status' => 'ยกเลิก']);
 
     return redirect()->back()->with('success', 'ยกเลิกคิวเรียบร้อยแล้ว');
+}
+
+
+
+// ในไฟล์ app/Http/Controllers/QueueController.php
+
+/**
+ * ฟังก์ชันสำหรับสร้างไฟล์ PDF ใบยืนยันคิว
+ */
+public function exportTicketPDF($id)
+{
+    // 1. ดึงข้อมูลคิวที่ต้องการพิมพ์
+    $queue = \App\Models\Queue::with(['user', 'doctorSchedule.user'])->findOrFail($id);
+
+    // 2. คำนวณลำดับคิว เพื่อให้ข้อมูลใน PDF ตรงกับหน้าจอ success
+    $queueBeforeCount = \App\Models\Queue::where('docschId', $queue->docschId)
+        ->where('id', '<', $queue->id)
+        ->whereIn('status', ['รอเรียก', 'กำลังใช้บริการ'])
+        ->count();
+    
+    $myOrder = $queueBeforeCount + 1;
+
+    // 3. สร้าง PDF โดยดึงจากหน้า View ที่เตรียมไว้
+    // (ตรวจสอบว่ามีไฟล์ resources/views/reports/queue_ticket.blade.php หรือยัง)
+   $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.queue_ticket', compact('queue', 'queueBeforeCount', 'myOrder'))
+          ->setPaper([0, 0, 400, 500], 'portrait')
+          ->setOptions([
+              'tempDir' => public_path(),
+              'chroot'  => public_path(),
+              'isRemoteEnabled' => true,
+              'defaultFont' => 'Sarabun' // แก้จาก 'THSarabunNew' เป็น 'Sarabun'
+          ]);
+    // 4. แสดงผลไฟล์ PDF ออกมา
+    return $pdf->stream('Queue-Ticket-' . $queue->labelNo . '.pdf');
+}
+    public function exportQueuesPDF(Request $request)
+{
+    $query = \App\Models\Queue::with(['user', 'doctorSchedule.user']);
+
+    // 1. คัดกรองตามชื่อคนไข้/เลขคิว
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('labelNo', 'LIKE', "%$search%")
+              ->orWhereHas('user', function($u) use ($search) {
+                  $u->where('name', 'LIKE', "%$search%");
+              });
+        });
+    }
+
+    // 2. คัดกรองตามวันที่ (ถ้าไม่เลือกจะดึงทุกวันที่)
+    if ($request->filled('date')) {
+        $query->whereHas('doctorSchedule', function($q) use ($request) {
+            $q->whereDate('schedule_date', $request->date);
+        });
+    }
+
+    $queues = $query->get();
+
+    // 3. สร้าง PDF (ใช้ฟอนต์ Sarabun ตามที่คุณตั้งค่าไว้)
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.all_queues_pdf', compact('queues'))
+              ->setPaper('a4', 'landscape') // แนวนอนจะเหมาะกับตารางจัดการคิว
+              ->setOptions([
+                  'isRemoteEnabled' => true,
+                  'defaultFont' => 'Sarabun'
+              ]);
+
+    return $pdf->stream('Queue-Report.pdf');
 }
 }

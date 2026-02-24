@@ -51,7 +51,13 @@ Route::middleware('auth')->group(function () {
     // รายงาน PDF ต่างๆ
     Route::get('/admin/report/services/pdf', [ReportController::class, 'servicesPdf'])->name('report.service.pdf');
 // เปลี่ยนจาก 'usersPdf' เป็น 'exportUserPDF' ให้ตรงกับที่แก้ใน Controller ล่าสุด
-Route::get('/admin/report/users/pdf', [App\Http\Controllers\ReportController::class, 'exportUserPDF'])->name('reports.users.pdf');
+    Route::get('/admin/report/users/pdf', [App\Http\Controllers\ReportController::class, 'exportUserPDF'])->name('reports.users.pdf');
+        // ไฟล์ routes/web.php
+    Route::get('/queues/pdf/{id}', [QueueController::class, 'exportTicketPDF'])->name('queues.pdf');
+    // ในไฟล์ routes/web.php
+// ตัวอย่างการตั้งชื่อให้ตรงกับหน้า View
+Route::get('/admin/export-queues-pdf', [QueueController::class, 'exportPDF'])
+    ->name('admin.queues.export-pdf');
 });
 
 // จัดการข้อมูลผู้ใช้
