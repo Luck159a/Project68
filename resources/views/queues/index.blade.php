@@ -1,7 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex justify-between items-center">
-            {{-- หัวข้อระบบจัดการคิว --}}
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('ระบบจัดการคิวเข้ารับบริการ') }}
             </h2>
@@ -18,10 +17,10 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 
-                {{-- ฟอร์มค้นหา --}}
+                {{-- ฟอร์มค้นหา และ ปุ่มดาวน์โหลด PDF --}}
                 <form method="GET" action="{{ route('queues.index') }}" class="flex flex-wrap items-end gap-3 mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">ค้นหาเลขคิว/ชื่อคนไข้</label>
+                        <label class="block text-sm font-medium text-gray-700">ค้นหาเลขคิว/ชื่อคนไข้/แพทย์</label>
                         <input type="text" name="search" value="{{ request('search') }}" 
                                placeholder="ค้นหา..." 
                                class="mt-1 block w-64 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
@@ -50,9 +49,10 @@
                             <a href="{{ route('queues.index') }}" class="text-sm text-gray-500 hover:text-red-600 transition">ล้างค่า</a>
                         @endif
 
-                        {{-- ปุ่มดาวน์โหลด PDF: แสดงตลอดเวลา --}}
-                        <a href="{{ route('admin.queues.export-pdf', request()->all()) }}" target="_blank"
-                           class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 shadow-md transition ease-in-out duration-150">
+                        {{-- เพิ่มปุ่มดาวน์โหลด PDF ตรงนี้ (ทำงานร่วมกับ Filter) --}}
+                        <a href="{{ route('admin.queues.export-pdf', request()->all()) }}" 
+                           target="_blank" 
+                           class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 shadow-md transition">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>

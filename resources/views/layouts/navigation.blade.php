@@ -32,7 +32,7 @@
                                 {{ __('จัดการคิวเข้ารับบริการ') }}
                             </x-nav-link>
 
-                            {{-- ⭐ 4. เมนูรายงาน (Dropdown) - เปิดให้ทั้ง ADMIN และ STAFF เห็น --}}
+                            {{-- ⭐ 4. เมนูรายงาน (Dropdown) --}}
                             <div class="hidden sm:flex sm:items-center sm:ms-4">
                                 <x-dropdown align="right" width="48">
                                     <x-slot name="trigger">
@@ -46,9 +46,17 @@
                                         </button>
                                     </x-slot>
                                     <x-slot name="content">
-                                        {{-- ใช้ Route รายงานเดิมที่คุณมีอยู่ --}}
-                                        <x-dropdown-link href="{{ route('reports.users.pdf') }}">รายงานบัญชีผู้ใช้ (PDF)</x-dropdown-link>
-                                        <x-dropdown-link href="{{ route('report.service.pdf') }}">รายงานผู้เข้ารับบริการ (PDF)</x-dropdown-link>
+                                        {{-- แสดง "รายงานบัญชีผู้ใช้" เฉพาะ Admin เท่านั้น --}}
+                                        @if (strtolower(auth()->user()->role) === 'admin')
+                                            <x-dropdown-link href="{{ route('reports.users.pdf') }}">
+                                                {{ __('รายงานบัญชีผู้ใช้ (PDF)') }}
+                                            </x-dropdown-link>
+                                        @endif
+
+                                        {{-- รายงานผู้เข้ารับบริการ ให้เห็นทั้ง Admin และ Staff --}}
+                                        <x-dropdown-link href="{{ route('queues.export-pdf', request()->query()) }}" target="_blank">
+                                            {{ __('รายงานผู้เข้ารับบริการ (PDF)') }}
+                                        </x-dropdown-link>
                                     </x-slot>
                                 </x-dropdown>
                             </div>

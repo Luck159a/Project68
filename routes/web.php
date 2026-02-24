@@ -8,7 +8,7 @@ use App\Http\Controllers\QueueController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\DoctorController;
 use App\Http\Controllers\DoctorScheduleController;
-
+use App\Http\Controllers\DashboardController;
 
 
 // --- หน้าแรกและ Dashboard ---
@@ -55,9 +55,19 @@ Route::middleware('auth')->group(function () {
         // ไฟล์ routes/web.php
     Route::get('/queues/pdf/{id}', [QueueController::class, 'exportTicketPDF'])->name('queues.pdf');
     // ในไฟล์ routes/web.php
-// ตัวอย่างการตั้งชื่อให้ตรงกับหน้า View
-Route::get('/admin/export-queues-pdf', [QueueController::class, 'exportPDF'])
-    ->name('admin.queues.export-pdf');
+    // ตัวอย่างการตั้งชื่อให้ตรงกับหน้า View
+    Route::get('/admin/export-queues-pdf', [QueueController::class, 'exportPDF'])
+        ->name('admin.queues.export-pdf');
+        Route::get('/admin/users/export-pdf', [App\Http\Controllers\UserController::class, 'exportPDF'])
+        ->name('admin.users.export-pdf');
+     // เพิ่มเข้าไปในกลุ่มที่ Admin/Staff เข้าถึงได้
+    Route::get('/users/export-pdf', [UserController::class, 'exportPdf'])->name('admin.users.export-pdf');
+    // Route สำหรับดาวน์โหลด PDF ของคิว (จัดการคิว)
+    Route::get('/queues/export-pdf', [QueueController::class, 'exportPdf'])->name('queues.export-pdf');
+    Route::get('/admin/report/services/pdf', [QueueController::class, 'exportPdf'])->name('reports.services.pdf');
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 });
 
 // จัดการข้อมูลผู้ใช้

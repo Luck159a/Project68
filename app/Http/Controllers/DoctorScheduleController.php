@@ -10,13 +10,22 @@ use Illuminate\Support\Facades\Auth;
 class DoctorScheduleController extends Controller
 {
     /**
+     * ใช้ Constructor เพื่อเช็คสิทธิ์ Middleware
+     */
+    public function __construct()
+    {
+        // บรรทัดนี้จะทำงานได้ต้องมั่นใจว่าคุณมี Middleware ชื่อ 'role' อยู่ในโปรเจกต์
+        // ถ้าไม่มี Middleware นี้ ให้ลบบรรทัดล่างนี้ออก แล้วใช้การเช็คในฟังก์ชันแทน (ผมทำเผื่อไว้ให้แล้ว)
+        // $this->middleware(['auth', 'role:admin,staff'])->except(['index', 'show']);
+    }
+
+    /**
      * แสดงรายการตารางเวลา (ทุกคนดูได้)
      */
     public function index(Request $request)
     {
         $query = DoctorSchedule::with('user');
 
-        // ระบบค้นหาชื่อแพทย์
         if ($request->filled('search')) {
             $query->whereHas('user', function($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%');
@@ -28,27 +37,25 @@ class DoctorScheduleController extends Controller
     }
 
     /**
-     * หน้าฟอร์มสร้างตารางเวลา (เฉพาะ Admin และ Staff)
+     * หน้าฟอร์มสร้างตารางเวลา (อนุญาต Admin และ Staff)
      */
     public function create()
     {
-        // เช็คสิทธิ์: ถ้าไม่ใช่ admin และไม่ใช่ staff ให้ดีดออก
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'staff') {
+        // แก้ไข: ใช้ strtolower เพื่อรองรับ STAFF หรือ staff
+        if (!Auth::check() || !in_array(strtolower(Auth::user()->role), ['admin', 'staff'])) {
             abort(403, 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
         $doctors = User::where('role', 'doctor')->get();
-        // ใช้หน้า doctor_schedules.form ตามโครงสร้างเดิมของคุณ
         return view('doctor_schedules.form', compact('doctors'));
     }
 
     /**
-     * บันทึกข้อมูลตารางเวลา (เฉพาะ Admin และ Staff)
+     * บันทึกข้อมูล
      */
     public function store(Request $request)
     {
-        // เช็คสิทธิ์เพื่อความปลอดภัย
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'staff') {
+        if (!Auth::check() || !in_array(strtolower(Auth::user()->role), ['admin', 'staff'])) {
             abort(403);
         }
 
@@ -57,21 +64,19 @@ class DoctorScheduleController extends Controller
             'schedule_date' => 'required|date',
             'start_time' => 'required',
             'end_time' => 'required',
-            'status' => 'nullable|string' // เพิ่มกรณีมีสถานะ available/unavailable
+            'status' => 'nullable|string'
         ]);
 
         DoctorSchedule::create($validated);
-        
         return redirect()->route('doctor-schedules.index')->with('success', 'บันทึกตารางเวลาสำเร็จ');
     }
 
     /**
-     * หน้าฟอร์มแก้ไข (เฉพาะ Admin และ Staff)
+     * หน้าแก้ไข
      */
     public function edit(DoctorSchedule $doctorSchedule)
     {
-        // เช็คสิทธิ์
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'staff') {
+        if (!Auth::check() || !in_array(strtolower(Auth::user()->role), ['admin', 'staff'])) {
             abort(403);
         }
 
@@ -83,12 +88,11 @@ class DoctorScheduleController extends Controller
     }
 
     /**
-     * อัปเดตข้อมูล (เฉพาะ Admin และ Staff)
+     * อัปเดตข้อมูล
      */
     public function update(Request $request, DoctorSchedule $doctorSchedule)
     {
-        // เช็คสิทธิ์
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'staff') {
+        if (!Auth::check() || !in_array(strtolower(Auth::user()->role), ['admin', 'staff'])) {
             abort(403);
         }
 
@@ -101,22 +105,19 @@ class DoctorScheduleController extends Controller
         ]);
 
         $doctorSchedule->update($validated);
-        
         return redirect()->route('doctor-schedules.index')->with('success', 'อัปเดตตารางเวลาสำเร็จ');
     }
 
     /**
-     * ลบข้อมูล (เฉพาะ Admin และ Staff)
+     * ลบข้อมูล
      */
     public function destroy(DoctorSchedule $doctorSchedule)
     {
-        // เช็คสิทธิ์
-        if (Auth::user()->role !== 'admin' && Auth::user()->role !== 'staff') {
+        if (!Auth::check() || !in_array(strtolower(Auth::user()->role), ['admin', 'staff'])) {
             abort(403);
         }
 
         $doctorSchedule->delete();
-        
         return redirect()->route('doctor-schedules.index')->with('success', 'ลบตารางเวลาเรียบร้อยแล้ว');
     }
-}
+} // ปีกกาปิด Class ต้องอยู่ตรงนี้ท้ายสุดเสมอ!
