@@ -7,6 +7,19 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            
+            @if(session('success'))
+                <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg shadow-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg shadow-sm">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 
                 @if($queues->count() > 0)
@@ -26,7 +39,6 @@
                                 @foreach($queues as $q)
                                     <tr class="hover:bg-gray-50 transition duration-150">
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            {{-- ✅ แก้ไข: ใส่ลิงก์ครอบเลขคิวเพื่อให้กดไปดูหน้าลำดับคิวได้ --}}
                                             <a href="{{ route('queue.success', $q->id) }}" class="text-indigo-600 font-bold hover:text-indigo-900 hover:underline">
                                                 {{ $q->labelNo }}
                                             </a>
@@ -44,31 +56,31 @@
                                             {{ $q->period }} น.
                                         </td>
                                         
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            @if($q->status === 'เสร็จสิ้น')
-                                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                    เสร็จสิ้น
-                                                </span>
-                                            @elseif($q->status === 'ยกเลิก' || $q->status === 'ยกเลิกคิว')
-                                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                    ยกเลิก
-                                                </span>
-                                            @elseif($q->status === 'รอเรียก')
-                                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                    รอเรียก
-                                                </span>
-                                            @else
-                                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                    {{ $q->status }}
-                                                </span>
-                                            @endif
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <span class="px-3 py-1 rounded-full text-xs font-bold shadow-sm
+                                                {{ $q->status === 'รอเรียก' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : '' }}
+                                                {{ str_contains($q->status, 'ยกเลิก') ? 'bg-red-100 text-red-700 border border-red-200' : '' }}
+                                                {{ $q->status === 'เสร็จสิ้น' ? 'bg-green-100 text-green-700 border border-green-200' : '' }}">
+                                                {{ $q->status }}
+                                            </span>
                                         </td>
 
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {{-- ✅ เพิ่มปุ่มเพื่อให้ชัดเจนว่ากดดูรายละเอียดได้ --}}
-                                            <a href="{{ route('queue.success', $q->id) }}" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-1 rounded-md transition">
+                                            
+                                            <a href="{{ route('queue.success', $q->id) }}" class="text-indigo-600 hover:text-indigo-900 bg-indigo-50 px-3 py-2 rounded-md transition font-semibold">
                                                 ดูรายละเอียด
                                             </a>
+
+                                            @if($q->status === 'รอเรียก')
+                                                <form action="{{ route('queues.cancel', $q->id) }}" method="POST" class="inline-block ml-2" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกคิวนี้? (หากยกเลิกแล้ว ช่วงเวลาจะถูกปล่อยว่างให้ผู้อื่นจองทันที)')">
+                                                    @csrf 
+                                                    @method('PATCH')
+                                                    <button type="submit" class="text-red-600 hover:text-red-900 bg-red-50 border border-red-100 px-3 py-1.5 rounded-md transition font-semibold">
+                                                        ยกเลิกการจอง
+                                                    </button>
+                                                </form>
+                                            @endif
+
                                         </td>
                                     </tr>
                                 @endforeach

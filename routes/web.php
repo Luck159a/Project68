@@ -68,6 +68,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+    // 🌟 เพิ่มบรรทัดนี้เข้าไป เพื่อให้เมนู "ตารางงาน" รู้จักลิงก์นี้ 🌟
+    Route::get('/queue/book', [QueueController::class, 'book'])->name('queue.book');
 });
 
 // จัดการข้อมูลผู้ใช้

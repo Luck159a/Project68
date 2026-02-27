@@ -16,20 +16,22 @@ class QueueController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. ตรวจสอบสิทธิ์ (ถ้าเป็นคนไข้ให้เด้งไปหน้าประวัติ)
         if (strtolower(Auth::user()->role) === 'patient') {
             return redirect()->route('queue.history');
         }
 
-        // 2. รับค่าจาก Filter และ Search
         $date = $request->input('date');
         $search = $request->input('search');
 
-        // 3. เริ่ม Query พร้อมดึงความสัมพันธ์
         $query = Queue::with(['user', 'doctorSchedule.user']);
 
-        // กรองตามวันที่
-        if ($date) {
+        // กรองตามวันที่ (เพิ่มเงื่อนไข 'today')
+        if ($date === 'today') {
+            $today = Carbon::today()->toDateString();
+            $query->whereHas('doctorSchedule', function ($q) use ($today) {
+                $q->where('schedule_date', $today);
+            });
+        } elseif ($date) {
             $query->whereHas('doctorSchedule', function ($q) use ($date) {
                 $q->where('schedule_date', $date);
             });
@@ -48,12 +50,10 @@ class QueueController extends Controller
             });
         }
 
-        // 4. ดึงข้อมูลรายการคิวแบบ Paginate
         $queues = $query->orderBy('labelNo', 'asc')
             ->paginate(10)
             ->appends($request->query());
 
-        // 5. ดึงรายการวันที่ทั้งหมดที่มีในระบบ
         $availableDates = DoctorSchedule::select('schedule_date')
             ->distinct()
             ->orderBy('schedule_date', 'asc')
@@ -63,16 +63,36 @@ class QueueController extends Controller
     }
 
     /**
-     * Book: เลือกตารางหมอ (สำหรับเริ่มจองคิว)
+     * Book: เลือกตารางหมอ (ดักจับถ้าเป็นหมอให้ดูคิวตัวเอง)
      */
     public function book()
     {
+        $user = auth()->user();
+
+        // 🌟 ถ้าผู้ใช้งานเป็น "หมอ" (Doctor) 🌟
+        if (strtolower($user->role) === 'doctor') {
+            $today = \Carbon\Carbon::today()->toDateString();
+
+            $todayQueues = \App\Models\Queue::with(['user', 'doctorSchedule'])
+                ->whereHas('doctorSchedule', function ($q) use ($user, $today) {
+                    $q->where('user_id', $user->id) 
+                      ->where('schedule_date', $today);
+                })
+                ->where('status', '!=', 'ยกเลิก')
+                ->orderBy('period', 'asc')
+                ->get();
+
+            $totalQueuesToday = $todayQueues->count();
+
+            return view('queues.doctor_today', compact('todayQueues', 'totalQueuesToday'));
+        }
+
+        // 🌟 ถ้าเป็น "คนไข้" หรือ "แอดมิน" ให้ไปหน้าเลือกหมอตามปกติ 🌟
         $schedules = DoctorSchedule::with('user')
             ->where('schedule_date', '>=', now()->toDateString())
             ->orderBy('schedule_date', 'asc')
-            ->orderBy('start_time', 'asc')
             ->get();
-
+            
         return view('queues.book', compact('schedules'));
     }
 
@@ -82,7 +102,11 @@ class QueueController extends Controller
     public function create($scheduleId)
     {
         $schedule = DoctorSchedule::with(['user', 'queues'])->findOrFail($scheduleId);
-        $bookedPeriods = $schedule->queues->pluck('period')->toArray();
+        
+        $bookedPeriods = $schedule->queues
+            ->where('status', '!=', 'ยกเลิก')
+            ->pluck('period')
+            ->toArray();
 
         $slots = [];
         $startTime = Carbon::parse($schedule->start_time);
@@ -91,6 +115,7 @@ class QueueController extends Controller
         while ($startTime->copy()->addMinutes(20) <= $endTime) {
             $slotEnd = $startTime->copy()->addMinutes(20);
             $timeRange = $startTime->format('H:i') . ' - ' . $slotEnd->format('H:i');
+            
             $isBooked = in_array($timeRange, $bookedPeriods);
 
             $slots[] = [
@@ -109,29 +134,74 @@ class QueueController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'docschId' => 'required|exists:doctor_schedules,id',
+            'docschId' => 'required',
             'period' => 'required',
+            'Note' => 'nullable|string'
+        ], [
+            'period.required' => 'กรุณาเลือกช่วงเวลาที่ต้องการก่อนกดยืนยันครับ'
         ]);
 
-        $exists = Queue::where('docschId', $request->docschId)
-            ->where('period', $request->period)
-            ->exists();
+        $user = auth()->user();
+        $schedule = DoctorSchedule::findOrFail($request->docschId);
 
-        if ($exists) {
-            return back()->withErrors(['period' => 'ขออภัย ช่วงเวลานี้ถูกจองไปแล้ว']);
+        // ระบบตรวจสอบ: จำกัดคนไข้จองได้ 1 คิวต่อวัน
+        if (strtolower($user->role) === 'patient') {
+            $existingQueue = Queue::where('userId', $user->id)
+                ->whereHas('doctorSchedule', function ($query) use ($schedule) {
+                    $query->where('schedule_date', $schedule->schedule_date);
+                })
+                ->where('status', '!=', 'ยกเลิก') 
+                ->first();
+
+            if ($existingQueue) {
+                return redirect()->back()->withErrors([
+                    'period' => 'คุณได้ทำการจองคิวสำหรับวันที่ ' . Carbon::parse($schedule->schedule_date)->format('d/m/Y') . ' ไปแล้ว (จำกัดการจอง 1 คิวต่อวัน)'
+                ]);
+            }
         }
 
+        // ตรวจสอบว่าช่วงเวลานี้มีคนอื่นชิงจองไปแล้วหรือยัง
+        $isTimeSlotTaken = Queue::where('docschId', $schedule->id)
+            ->where('period', $request->period)
+            ->where('status', '!=', 'ยกเลิก')
+            ->exists();
+
+        if ($isTimeSlotTaken) {
+            return redirect()->back()->withErrors([
+                'period' => 'ขออภัย ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่น'
+            ]);
+        }
+
+        // 🌟 [ระบบแปลงหมอเป็นตัวอักษร A, B, C...] 🌟
+        // 1. ดึง ID ของหมอทั้งหมดมาเรียงลำดับ
+        $allDoctors = \App\Models\User::where('role', 'doctor')
+            ->orderBy('id', 'asc')
+            ->pluck('id')
+            ->toArray();
+        
+        // 2. หาว่าหมอที่ถูกจองคิวอยู่ลำดับที่เท่าไหร่
+        $doctorIndex = array_search($schedule->user_id, $allDoctors);
+
+        // 3. แปลงเป็นตัวอักษร (65 คือ A, 66 คือ B ...)
+        $doctorLetter = ($doctorIndex !== false) ? chr(65 + $doctorIndex) : 'A';
+
+        // 4. บันทึกข้อมูลคิวลง Database (ดึงคิวล่าสุดของตารางนั้นๆ)
+        $lastQueue = Queue::where('docschId', $schedule->id)->count();
+        
+        // ประกอบร่างเลขคิว เช่น Q-A001, Q-B002
+        $newQueueNumber = 'Q-' . $doctorLetter . str_pad($lastQueue + 1, 3, '0', STR_PAD_LEFT);
+
         $queue = Queue::create([
-            'docschId' => $request->docschId,
-            'userId' => Auth::id(),
-            'labelNo' => 'Q-' . strtoupper(substr(uniqid(), -4)),
+            'userId' => $user->id,
+            'docschId' => $schedule->id,
             'period' => $request->period,
+            'labelNo' => $newQueueNumber,
             'Note' => $request->Note,
             'status' => 'รอเรียก',
-            'created_by' => Auth::id()
+            'created_by' => auth()->id() // กัน Error created_by
         ]);
 
-        return redirect()->route('queue.success', $queue->id)->with('success', 'จองคิวสำเร็จ!');
+        return redirect()->route('queue.success', $queue->id)->with('success', 'จองคิวสำเร็จแล้ว!');
     }
 
     /**
@@ -179,13 +249,19 @@ class QueueController extends Controller
     }
 
     /**
-     * Cancel: ยกเลิกคิว
+     * Cancel: ยกเลิกคิว (คนไข้ยกเลิกคิวตัวเอง)
      */
     public function cancel($id)
     {
         $queue = Queue::findOrFail($id);
+        
+        $user = auth()->user();
+        if (strtolower($user->role) === 'patient' && $queue->userId !== $user->id) {
+            return redirect()->back()->withErrors('คุณไม่มีสิทธิ์ยกเลิกคิวนี้ครับ');
+        }
+
         $queue->update(['status' => 'ยกเลิก']);
-        return redirect()->back()->with('success', 'ยกเลิกคิวเรียบร้อยแล้ว');
+        return redirect()->back()->with('success', 'ยกเลิกคิวเรียบร้อยแล้ว ช่วงเวลานี้จะกลับมาว่างอีกครั้ง');
     }
 
     /**
@@ -214,42 +290,37 @@ class QueueController extends Controller
      * ฟังก์ชันสำหรับส่งออกรายงานคิวทั้งหมด หรือตามเงื่อนไขการค้นหา (PDF)
      */
     public function exportPDF(Request $request)
-{
-    // 1. สร้าง Query ตั้งต้น (ดึงข้อมูลความสัมพันธ์มาด้วย)
-    $query = \App\Models\Queue::with(['user', 'doctorSchedule.user']);
+    {
+        $query = Queue::with(['user', 'doctorSchedule.user']);
 
-    // 2. ตรวจสอบและกรองข้อมูลตาม 'search' (เลขคิว, ชื่อคนไข้, หรือ ชื่อแพทย์)
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function($q) use ($search) {
-            $q->where('labelNo', 'like', "%{$search}%")
-              ->orWhereHas('user', function($u) use ($search) {
-                  $u->where('name', 'like', "%{$search}%");
-              })
-              ->orWhereHas('doctorSchedule.user', function($d) use ($search) {
-                  $d->where('name', 'like', "%{$search}%");
-              });
-        });
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('labelNo', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($u) use ($search) {
+                      $u->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhereHas('doctorSchedule.user', function($d) use ($search) {
+                      $d->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('date')) {
+            $query->whereHas('doctorSchedule', function($q) use ($request) {
+                $q->where('schedule_date', $request->date);
+            });
+        }
+
+        $queues = $query->orderBy('labelNo', 'asc')->get();
+
+        $pdf = Pdf::loadView('reports.all_queues_pdf', compact('queues'))
+                  ->setPaper('a4', 'landscape')
+                  ->setOptions([
+                      'isRemoteEnabled' => true,
+                      'defaultFont' => 'Sarabun'
+                  ]);
+
+        return $pdf->stream('Queue-Report.pdf');
     }
-
-    // 3. ตรวจสอบและกรองข้อมูลตาม 'date'
-    if ($request->filled('date')) {
-        $query->whereHas('doctorSchedule', function($q) use ($request) {
-            $q->where('schedule_date', $request->date);
-        });
-    }
-
-    // 4. ดึงข้อมูลที่กรองเสร็จแล้วออกมา
-    $queues = $query->orderBy('labelNo', 'asc')->get();
-
-    // 5. ส่งค่า $queues ไปที่ View เพื่อทำ PDF
-    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.all_queues_pdf', compact('queues'))
-              ->setPaper('a4', 'landscape')
-              ->setOptions([
-                  'isRemoteEnabled' => true,
-                  'defaultFont' => 'Sarabun'
-              ]);
-
-    return $pdf->stream('Queue-Report.pdf');
-}
 }

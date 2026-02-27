@@ -29,12 +29,21 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700">เลือกวันที่เข้ารับบริการ</label>
                         <select name="date" class="mt-1 block w-48 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            
                             <option value="">วันที่ทั้งหมด</option>
+                            
+                            {{-- 🌟 เพิ่มตัวเลือกคิววันนี้ (ล่าสุด) ตรงนี้ 🌟 --}}
+                            <option value="today" {{ request('date') == 'today' ? 'selected' : '' }} class="font-bold text-indigo-600 bg-indigo-50">
+                                ⭐ คิววันนี้ (ล่าสุด)
+                            </option>
+
+                            {{-- วันที่อื่นๆ --}}
                             @foreach($availableDates as $d)
                                 <option value="{{ $d->schedule_date }}" {{ request('date') == $d->schedule_date ? 'selected' : '' }}>
                                     {{ \Carbon\Carbon::parse($d->schedule_date)->format('d/m/Y') }}
                                 </option>
                             @endforeach
+                            
                         </select>
                     </div>
 

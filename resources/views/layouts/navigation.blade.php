@@ -15,6 +15,13 @@
                             {{ __('หน้าแรก') }}
                         </x-nav-link>
 
+                        {{-- 🌟 จุดที่ 1 เพิ่มเมนู "ตารางงาน" สำหรับหมอ ตรงนี้ (Desktop) 🌟 --}}
+                        @if (strtolower(auth()->user()->role) === 'doctor')
+                            <x-nav-link :href="route('queue.book')" :active="request()->routeIs('queue.book')">
+                                {{ __('ตารางงาน') }}
+                            </x-nav-link>
+                        @endif
+
                         {{-- 2. เมนูเฉพาะ ADMIN เท่านั้น --}}
                         @if (strtolower(auth()->user()->role) === 'admin')
                             <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
@@ -36,7 +43,7 @@
                             <div class="hidden sm:flex sm:items-center sm:ms-4">
                                 <x-dropdown align="right" width="48">
                                     <x-slot name="trigger">
-                                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
+                                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150 mt-4">
                                             <div>รายงาน</div>
                                             <div class="ms-1">
                                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -102,6 +109,25 @@
                     </x-slot>
                 </x-dropdown>
             </div>
+        </div>
+    </div>
+
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+        <div class="pt-2 pb-3 space-y-1">
+            @auth
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    {{ __('หน้าแรก') }}
+                </x-responsive-nav-link>
+
+                {{-- 🌟 จุดที่ 2 เพิ่มเมนู "ตารางงาน" สำหรับหมอ (Mobile) ตรงนี้ 🌟 --}}
+                @if (strtolower(auth()->user()->role) === 'doctor')
+                    <x-responsive-nav-link :href="route('queue.book')" :active="request()->routeIs('queue.book')">
+                        {{ __('ตารางงาน') }}
+                    </x-responsive-nav-link>
+                @endif
+                
+                {{-- (ใส่ Responsive Menu อื่นๆ ที่คุณมีต่อท้ายตรงนี้ได้เลย) --}}
+            @endauth
         </div>
     </div>
 </nav>
