@@ -15,7 +15,7 @@
                             {{ __('หน้าแรก') }}
                         </x-nav-link>
 
-                        {{-- 🌟 จุดที่ 1 เพิ่มเมนู "ตารางงาน" สำหรับหมอ ตรงนี้ (Desktop) 🌟 --}}
+                        {{-- 🌟 เพิ่มเมนู "ตารางงาน" สำหรับหมอ ตรงนี้ (Desktop) 🌟 --}}
                         @if (strtolower(auth()->user()->role) === 'doctor')
                             <x-nav-link :href="route('queue.book')" :active="request()->routeIs('queue.book')">
                                 {{ __('ตารางงาน') }}
@@ -40,10 +40,10 @@
                             </x-nav-link>
 
                             {{-- ⭐ 4. เมนูรายงาน (Dropdown) --}}
-                            <div class="hidden sm:flex sm:items-center sm:ms-4">
+                            <div class="hidden sm:flex sm:items-center">
                                 <x-dropdown align="right" width="48">
                                     <x-slot name="trigger">
-                                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150 mt-4">
+                                        <button class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none transition duration-150 ease-in-out h-16 bg-transparent cursor-pointer">
                                             <div>รายงาน</div>
                                             <div class="ms-1">
                                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
@@ -89,7 +89,7 @@
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
                             <div class="flex items-center">
                                 {{ Auth::user()->name }}
-                                <span class="ml-2 px-2 py-1 text-xs font-bold text-white rounded-full {{ strtolower(Auth::user()->role) === 'admin' ? 'bg-red-600' : (strtolower(Auth::user()->role) === 'staff' ? 'bg-blue-600' : 'bg-green-600') }}">
+                                <span class="ml-2 px-2 py-1 text-xs font-bold text-white rounded-full {{ strtolower(Auth::user()->role) === 'admin' ? 'bg-red-600' : (strtolower(Auth::user()->role) === 'staff' ? 'bg-blue-600' : (strtolower(Auth::user()->role) === 'doctor' ? 'bg-orange-500' : 'bg-green-600')) }}">
                                     {{ strtoupper(Auth::user()->role) }}
                                 </span>
                             </div>
@@ -119,7 +119,7 @@
                     {{ __('หน้าแรก') }}
                 </x-responsive-nav-link>
 
-                {{-- 🌟 จุดที่ 2 เพิ่มเมนู "ตารางงาน" สำหรับหมอ (Mobile) ตรงนี้ 🌟 --}}
+                {{-- 🌟 เพิ่มเมนู "ตารางงาน" สำหรับหมอ (Mobile) ตรงนี้ 🌟 --}}
                 @if (strtolower(auth()->user()->role) === 'doctor')
                     <x-responsive-nav-link :href="route('queue.book')" :active="request()->routeIs('queue.book')">
                         {{ __('ตารางงาน') }}
